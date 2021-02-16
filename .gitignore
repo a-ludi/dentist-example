@@ -1,0 +1,10 @@
+/data
+/workdir
+/logs
+/gap-closed.*
+*.fasta
+*.agp
+*.db
+*.dam
+.snakemake
+*.tar.gz
