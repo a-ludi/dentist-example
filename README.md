@@ -2,6 +2,7 @@ DENTIST\: Mini Example
 ======================
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat)](https://github.com/RichardLitt/standard-readme)
+![GitHub](https://img.shields.io/github/license/a-ludi/dentist)
 
 > A small example to test DENTIST's workflow
 
