@@ -12,7 +12,7 @@ EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
 DOC_FILES=README.md
-DIST_SOURCE_FILES=cluster.yaml profile-slurm.yaml Snakefile snakemake.yaml
+DIST_SOURCE_FILES=cluster.yaml dentist.json profile-slurm.yaml Snakefile snakemake.yaml
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
 
 SOURCE_TARBALL=dentist-example.source.tar.gz
