@@ -42,12 +42,11 @@ error-prone.
 Usage
 -------
 
-First of all download the [test data and workflow][tarball], extract it to
-your favorite working directory and switch to the `dentist-example` directory.
+First of all download the test data and workflow and switch to the
+`dentist-example` directory.
 
 ```sh
-wget https://bds.mpi-cbg.de/hillerlab/DENTIST/dentist-example.v1.0.1.tar.gz
-tar -xzf dentist-example.tar.gz
+git clone https://github.com/a-ludi/dentist-example.git
 cd dentist-example
 ```
 
@@ -76,7 +75,6 @@ If you want to run with a differnt cluster manager or in the cloud, please
 read the advice in [DENTIST's README][dentist-cluster].
 
 
-[example-tarball-v1.0.1]: https://bds.mpi-cbg.de/hillerlab/DENTIST/dentist-example.v1.0.1.tar.gz
 [dentist-install]: https://github.com/a-ludi/dentist#executing-on-a-cluster
 
 
