@@ -34,7 +34,7 @@ of DENTIST][dentist-install]. But that is much more complicated and
 error-prone.
 
 
-[snakemake]: https://snakemake.readthedocs.io/en/v5.11.2/getting_started/installation.html
+[snakemake]: https://snakemake.readthedocs.io/en/v5.32.1/getting_started/installation.html
 [singularity]: https://sylabs.io/guides/3.5/user-guide/quick_start.html
 [dentist-install]: https://github.com/a-ludi/dentist#install
 
