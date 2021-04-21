@@ -109,7 +109,8 @@ Citation
 --------
 
 > Arne Ludwig, Martin Pippel, Gene Myers, Michael Hiller. DENTIST – using long
-> reads to close assembly gaps at high accuracy. _In preparation._
+> reads to close assembly gaps at high accuracy. __Submitted for peer review__.
+> Pre-print at <https://doi.org/10.1101/2021.02.26.432990>
 
 
 Maintainer
