@@ -2,13 +2,14 @@ DENTIST\: Mini Example
 ======================
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat)](https://github.com/RichardLitt/standard-readme)
-![GitHub](https://img.shields.io/github/license/a-ludi/dentist)
+![License](https://img.shields.io/github/license/a-ludi/dentist)
+[![GitHub](https://img.shields.io/badge/GitHub-code-blue?logo=github)][dentist]
 
 > A small example to test DENTIST's workflow
 
-Quickly test DENTIST with this example workflow. It uses part of the
+Quickly test [DENTIST][dentist] with this example workflow. It uses part of the
 _D. melanogaster_ reference assembly (dm6) and simulated reads to demonstrate
-the workflow.
+the workflow. The full source code of DENTIST is available at <https://github.com/a-ludi/dentist>.
 
 
 Table of Contents
@@ -122,3 +123,6 @@ License
 -------
 
 This project is licensed under MIT License (see [LICENSE](./LICENSE)).
+
+
+[dentist]: https://github.com/a-ludi/dentist "Source Code of DENTIST at GitHub"
