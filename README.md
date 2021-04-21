@@ -55,7 +55,7 @@ Execute the entire workflow on your *local machine* using `all` cores:
 
 ```sh
 # run the workflow
-snakemake --configfile=snakemake.yaml --use-singularity --cores=all
+snakemake --configfile=snakemake.yml --use-singularity --cores=all
 
 # validate the files
 md5sum -c checksum.md5
@@ -65,8 +65,8 @@ Execute the workflow on a *SLURM cluster*:
 
 ```sh
 mkdir -p "$HOME/.config/snakemake/slurm"
-cp -v "profile-slurm.yaml" "$HOME/.config/snakemake/slurm/config.yaml"
-snakemake --configfile=snakemake.yaml --use-singularity --profile=slurm
+cp -v "profile-slurm.yml" "$HOME/.config/snakemake/slurm/config.yml"
+snakemake --configfile=snakemake.yml --use-singularity --profile=slurm
 
 # validate the files
 md5sum -c checksum.md5
@@ -98,7 +98,7 @@ while [[ ! -f "gap-closed.fasta" ]] && (( RETRY++ < 3 )); do
     # allow snakemake to overwrite protected output
     chmod -R u+w workdir
     # try snakemake...
-    snakemake --configfile=snakemake.yaml --use-singularity --cores=all
+    snakemake --configfile=snakemake.yml --use-singularity --cores=all
 done
 ```
 
