@@ -1,0 +1,3 @@
+[submodule "external/dentist"]
+	path = external/dentist
+	url = https://github.com/a-ludi/dentist.git
