@@ -65,7 +65,9 @@ Execute the workflow on a *SLURM cluster*:
 
 ```sh
 mkdir -p "$HOME/.config/snakemake/slurm"
-cp -v "profile-slurm.yml" "$HOME/.config/snakemake/slurm/config.yml"
+# select one of the profile-slurm.{drmaa,submit-async,submit-sync}.yml files
+cp -v "profile-slurm.sync.yml" "$HOME/.config/snakemake/slurm/config.yml"
+# execute using the cluster profile
 snakemake --configfile=snakemake.yml --use-singularity --profile=slurm
 
 # validate the files
@@ -73,7 +75,10 @@ md5sum -c checksum.md5
 ```
 
 If you want to run with a differnt cluster manager or in the cloud, please
-read the advice in [DENTIST's README][dentist-cluster].
+read the advice in [DENTIST's README][dentist-cluster]. The easiest option is
+to adjust the `srun` command in `profile-slurm.sync.yml` to your cluster, e.g.
+`qsub -sync yes`. The command must submit a job to the cluster and *wait* for
+it to finish.
 
 
 [dentist-install]: https://github.com/a-ludi/dentist#executing-on-a-cluster
