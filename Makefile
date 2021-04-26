@@ -12,7 +12,7 @@ EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
 DOC_FILES=README.md
-DIST_SOURCE_FILES=cluster.yaml dentist.json profile-slurm.yaml Snakefile snakemake.yaml
+DIST_SOURCE_FILES=cluster.yml dentist.json profile-slurm.yml Snakefile snakemake.yml
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
 
 SOURCE_TARBALL=dentist-example.source.tar.gz
@@ -71,5 +71,5 @@ tar: $(SOURCE_TARBALL)
 
 .PHONY: test
 test: $(MAIN_OUTPUTS)
-	$(snakemake) --configfile=snakemake.yaml -nq
-	$(snakemake) --configfile=snakemake.yaml -j1 extend_dentist_config
+	$(snakemake) --configfile=snakemake.yml -nq
+	$(snakemake) --configfile=snakemake.yml -j1 extend_dentist_config
