@@ -64,6 +64,9 @@ snakemake --configfile=snakemake.yml --use-singularity --cores=all
 md5sum -c checksum.md5
 ```
 
+Execution takes approx. 7 minutes and a maximum of 1.7GB memory on my little
+laptop with an Intel® Core™ i5-5200U CPU @ 2.20GHz.
+
 
 ### Cluster Execution
 
