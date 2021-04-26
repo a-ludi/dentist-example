@@ -51,6 +51,9 @@ tar -xzf dentist-example.tar.gz
 cd dentist-example
 ```
 
+
+### Local Execution
+
 Execute the entire workflow on your *local machine* using `all` cores:
 
 ```sh
@@ -60,6 +63,9 @@ snakemake --configfile=snakemake.yml --use-singularity --cores=all
 # validate the files
 md5sum -c checksum.md5
 ```
+
+
+### Cluster Execution
 
 Execute the workflow on a *SLURM cluster*:
 
