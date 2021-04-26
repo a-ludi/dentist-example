@@ -2,6 +2,7 @@ from snakemake.utils import min_version
 
 min_version("5.32.1")
 
+import base64
 import json
 from itertools import chain
 from math import *
@@ -25,6 +26,23 @@ dentist_container = None
 #-----------------------------------------------------------------------------
 # BEGIN functions
 #-----------------------------------------------------------------------------
+
+
+def prefetch_singularity_image(container_url):
+    if not workflow.use_singularity:
+        return
+
+    from snakemake.deployment.singularity import Image
+    from snakemake.persistence import Persistence
+    from snakemake.logging import logger
+
+    logger.info("Pre-fetching singularity image...")
+    dag = type('FakeDAG', (object,), dict(
+        workflow=type('FakeWorkflow', (object,), dict(
+                persistence=Persistence(singularity_prefix=workflow.singularity_prefix)
+            ))))
+
+    Image(container_url, dag, is_containerized=True).pull()
 
 
 def shellcmd(cmd):
@@ -723,6 +741,9 @@ workflow_flags_names = ["full_validation", "no_purge_output"]
 workflow_flags = dict(((flag, config.get(flag, False))  for flag in workflow_flags_names))
 dentist_container = config.get("dentist_container", "docker://aludi/dentist:stable")
 
+if workflow.use_singularity:
+    prefetch_singularity_image(dentist_container)
+
 
 # workflow files
 reference_fasta = inputs["reference"]
@@ -798,16 +819,16 @@ if "TMPDIR" in environ:
     tmpdir_flag = { "-P": environ["TMPDIR"] }
     additional_lamerge_options = ensure_flags(additional_lamerge_options, tmpdir_flag)
 
-lacheck_failed_notice = shell_esc(docstring("""
+lacheck_failed_notice = base64.b64encode(docstring("""
     Check failed. Possible solutions:
 
     Duplicate LAs: can be fixed by LAsort from 2020-03-22 or later.
 
-    In order to ignore checks entirely you may use the environment variable
-    SKIP_LACHECK=1. Use only if you are positive the files are in fact OK!
-"""))
+    In order to make checks mandatory, you may use the environment variable
+    ERROR_LACHECK=1. Use only if you are a very cautious and curious person!
+""").encode())
 
-lacheck_handler = "{ echo " + lacheck_failed_notice + "; (( ${SKIP_LACHECK:-0} != 0 )); }"
+lacheck_handler = f"{{ echo '{lacheck_failed_notice}' | base64 -d; (( ${{ERROR_LACHECK:-0}} == 0 )); }}"
 
 
 def LAmerge(merged="output", parts="input[block_alignments]", dbs="params.dbs", log="log"):
