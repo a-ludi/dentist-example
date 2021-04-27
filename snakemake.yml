@@ -42,7 +42,7 @@ full_validation: true
 # The workflow can be easily run inside a container (--use-singularity) to
 # reduce the software installations. The default container is
 # "docker://aludi/dentist:stable" and can be changed by the following line.
-dentist_container: "./dentist_v1.0.1.sif"
+dentist_container: "./dentist_v1.0.2.sif"
 
 
 inputs:
