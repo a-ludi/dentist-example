@@ -11,6 +11,8 @@ Quickly test [DENTIST][dentist] with this example workflow. It uses part of the
 _D. melanogaster_ reference assembly (dm6) and simulated reads to demonstrate
 the workflow. The full source code of DENTIST is available at <https://github.com/a-ludi/dentist>.
 
+If you experience issues, please take a look at the [troubleshooting section](#troubleshooting). If that does not help, please create an issue at [the DENTIST repository](https://github.com/a-ludi/dentist/issues).
+
 
 Table of Contents
 -----------------
@@ -95,6 +97,8 @@ it to finish.
 
 Troubleshooting
 ---------------
+
+If this section does not solve your problem, please create an issue at [the DENTIST repository](https://github.com/a-ludi/dentist/issues).
 
 When executed on a single machine, `snakemake` will sometimes quit with an
 `ProtectedOutputException` ([Snakemake bug report filed][sm-884]). You may try the follow snippet to get `snakemake`
