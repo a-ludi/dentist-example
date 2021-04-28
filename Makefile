@@ -11,6 +11,7 @@ EXAMPLE_ASSEMBLY_TEST=$(DATADIR)/assembly-test
 EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
+DENTIST_CONTAINER=dentist_v1.0.2.sif
 DOC_FILES=README.md
 DIST_SOURCE_FILES=cluster.yml dentist.json profile-slurm.drmaa.yml profile-slurm.submit-async.yml profile-slurm.submit-sync.yml Snakefile snakemake.yml
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
@@ -46,13 +47,16 @@ $(EXAMPLE_READS).fasta $(EXAMPLE_READ_MAPPING): $(EXAMPLE_ASSEMBLY_REFERENCE).da
 checksum.md5: result-files.lst $(DIST_SOURCE_FILES)
 	md5sum $$(< $<) > $@
 
+dentist_%.sif:
+	singularity build $@ docker-daemon://dentist:$*
+
 $(DATADIR):
 	mkdir -p $@
 
 $(SOURCE_TARBALL): $(DOC_FILES) $(SOURCE_FILES) checksum.md5
 	tar --transform='s|^|dentist-example/|' -czf $@ $^
 
-$(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) checksum.md5
+$(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) $(DENTIST_CONTAINER) checksum.md5
 	tar --transform='s|^|dentist-example/|' -czf $@ $^
 
 .PHONY: clean
