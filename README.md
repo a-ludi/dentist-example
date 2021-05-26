@@ -29,11 +29,10 @@ Table of Contents
 Install
 -------
 
-Make sure you have [Snakemake][snakemake] (5.32.1 or later) and [Singularity][singularity] 3.5.x or later installed.
+Make sure you have [Snakemake][snakemake] 5.32.1 or later installed.
 
-If you do not want to use Singularity, you have to follow the [software setup
-of DENTIST][dentist-install]. But that is much more complicated and
-error-prone.
+You can also use the convenient Singularity container to execute the rules.
+Just make sure you have [Singularity][singularity] 3.5.x or later installed.
 
 
 [snakemake]: https://snakemake.readthedocs.io/en/v5.32.1/getting_started/installation.html
@@ -60,7 +59,7 @@ Execute the entire workflow on your *local machine* using `all` cores:
 
 ```sh
 # run the workflow
-snakemake --configfile=snakemake.yml --use-singularity --cores=all
+PATH="$PWD/bin:$PATH" snakemake --configfile=snakemake.yml --cores=all
 
 # validate the files
 md5sum -c checksum.md5
@@ -68,6 +67,19 @@ md5sum -c checksum.md5
 
 Execution takes approx. 7 minutes and a maximum of 1.7GB memory on my little
 laptop with an Intel® Core™ i5-5200U CPU @ 2.20GHz.
+
+
+### Execution in Singularity Container
+
+Execute the workflow inside a convenient Sinuglarity image by adding `--use-singularity` to the call to Snakemake:
+
+```sh
+# run the workflow
+snakemake --configfile=snakemake.yml --use-singularity --cores=all
+
+# validate the files
+md5sum -c checksum.md5
+```
 
 
 ### Cluster Execution

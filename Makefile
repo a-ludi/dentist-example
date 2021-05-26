@@ -11,10 +11,15 @@ EXAMPLE_ASSEMBLY_TEST=$(DATADIR)/assembly-test
 EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
-DENTIST_CONTAINER=dentist_v1.0.2.sif
 DOC_FILES=README.md
 DIST_SOURCE_FILES=cluster.yml dentist.json profile-slurm.drmaa.yml profile-slurm.submit-async.yml profile-slurm.submit-sync.yml Snakefile snakemake.yml
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
+DENTIST_VERSION=1.0.2
+DENTIST_CONTAINER=dentist_$(DENTIST_VERSION).sif
+BINDIR=bin
+BINARIES=$(addprefix $(BINDIR)/,Catrack computeintrinsicqv daccord daligner DAM2fasta damapper DAScover DASqv datander DB2fasta DBa2b DBb2a DBdump DBdust DBmv DBrm DBshow DBsplit DBstats DBtrim DBwipe dentist dumpLA fasta2DAM fasta2DB LAa2b LAb2a LAcat LAcheck LAdump LAmerge lasfilteralignments LAshow LAsort LAsplit rangen simulator TANmask)
+RUNTIME_ENVIRONMENT=$(DENTIST_CONTAINER) $(BINARIES)
+
 
 SOURCE_TARBALL=dentist-example.source.tar.gz
 DIST_TARBALL=dentist-example.tar.gz
@@ -22,7 +27,7 @@ TEMP_OUTPUTS=$(EXAMPLE_ASSEMBLY_REFERENCE).dam $(addprefix $(dir $(EXAMPLE_ASSEM
 MAIN_OUTPUTS=$(EXAMPLE_ASSEMBLY_REFERENCE).fasta $(EXAMPLE_ASSEMBLY_TEST).fasta $(EXAMPLE_READS).fasta $(EXAMPLE_READ_MAPPING)
 ALL_OUTPUTS=$(MAIN_OUTPUTS) $(TEMP_OUTPUTS)
 
-snakemake=`command -v snakemake`
+snakemake=$(shell command -v snakemake)
 
 .PHONY: all
 all: $(MAIN_OUTPUTS)
@@ -47,16 +52,24 @@ $(EXAMPLE_READS).fasta $(EXAMPLE_READ_MAPPING): $(EXAMPLE_ASSEMBLY_REFERENCE).da
 checksum.md5: result-files.lst $(DIST_SOURCE_FILES)
 	md5sum $$(< $<) > $@
 
+$(BINDIR)/%: | $(BINDIR)
+	id=$$(docker create dentist:$(DENTIST_VERSION)) && \
+	trap 'docker rm $$id' exit && \
+	docker cp "$$id:$$(docker run dentist:ubuntu which $*)" $@
+
+.PHONY: binaries
+binaries: $(BINARIES)
+
 dentist_%.sif:
 	singularity build $@ docker-daemon://dentist:$*
 
-$(DATADIR):
+$(DATADIR) $(BINDIR):
 	mkdir -p $@
 
 $(SOURCE_TARBALL): $(DOC_FILES) $(SOURCE_FILES) checksum.md5
 	tar --transform='s|^|dentist-example/|' -czf $@ $^
 
-$(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) $(DENTIST_CONTAINER) checksum.md5
+$(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) $(RUNTIME_ENVIRONMENT) checksum.md5
 	tar --transform='s|^|dentist-example/|' -czf $@ $^
 
 .PHONY: clean
@@ -75,5 +88,8 @@ tar: $(SOURCE_TARBALL)
 
 .PHONY: test
 test: $(MAIN_OUTPUTS)
+	#singularity exec $(DENTIST_CONTAINER) dentist -d
+	PATH="$(BINDIR)" dentist -d
 	$(snakemake) --configfile=snakemake.yml -nq
-	$(snakemake) --configfile=snakemake.yml -j1 extend_dentist_config
+	$(snakemake) --configfile=snakemake.yml --use-singularity -j1 -f validate_dentist_config
+	PATH="$(BINDIR):$$PATH" $(snakemake) --configfile=snakemake.yml -j1 -f validate_dentist_config
