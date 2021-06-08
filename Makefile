@@ -67,10 +67,10 @@ $(DATADIR) $(BINDIR):
 	mkdir -p $@
 
 $(SOURCE_TARBALL): $(DOC_FILES) $(SOURCE_FILES) checksum.md5
-	tar --transform='s|^|dentist-example/|' -czf $@ $^
+	tar --transform='s|^|dentist-example/|' --dereference -czf $@ $^
 
 $(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) $(RUNTIME_ENVIRONMENT) checksum.md5
-	tar --transform='s|^|dentist-example/|' -czf $@ $^
+	tar --transform='s|^|dentist-example/|' --dereference -czf $@ $^
 
 .PHONY: clean
 clean:
