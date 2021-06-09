@@ -1,10 +1,8 @@
-# get the data at PBGAPS=https://bds.mpi-cbg.de/hillerlab/DENTIST/
-# be sure to copy the hidden files .assembly-reference.{bps,hdr,idx}
-ASSEMBLY_REFERENCE=$(PBGAPS)/data/d_melanogaster/assembly-reference.dam
-ASSEMBLY_TEST=$(PBGAPS)/data/d_melanogaster/assembly-test.fasta
-READ_MAPPING=$(PBGAPS)/data/d_melanogaster/reads-simulated-pb.mapping.csv
-
+REMOTE_DATA=https://bds.mpi-cbg.de/hillerlab/DENTIST/data
 DATADIR=data
+ASSEMBLY_REFERENCE=$(DATADIR)/d_melanogaster/assembly-reference.dam
+ASSEMBLY_REFERENCE_ALL=$(ASSEMBLY_REFERENCE) $(addprefix $(dir $(ASSEMBLY_REFERENCE)).$(notdir $(basename $(ASSEMBLY_REFERENCE))).,bps hdr idx)
+ASSEMBLY_TEST=$(DATADIR)/d_melanogaster/assembly-test.fasta
 SIMULATED_READS_SEED=19339
 EXAMPLE_ASSEMBLY_REFERENCE=$(DATADIR)/assembly-reference
 EXAMPLE_ASSEMBLY_TEST=$(DATADIR)/assembly-test
@@ -32,12 +30,12 @@ snakemake=$(shell command -v snakemake)
 .PHONY: all
 all: $(MAIN_OUTPUTS)
 
-$(DATADIR)/scaffold_id: $(ASSEMBLY_REFERENCE) | $(DATADIR)
+$(DATADIR)/scaffold_id: $(ASSEMBLY_REFERENCE_ALL) | $(DATADIR)
 	@echo "-- selecting largest contig of ground-truth assembly corresponding to the largest scaffold in the test assembly ..."
-	DBdump -rh $(ASSEMBLY_REFERENCE) | awk '($$1 == "R") { cid = $$2 } ($$1 == "L") {if ($$4 - $$3 > maxlen) { maxlen = $$4 - $$3; max_cid = cid } } END { print max_cid }' > $@
+	DBdump -rh $< | awk '($$1 == "R") { cid = $$2 } ($$1 == "L") {if ($$4 - $$3 > maxlen) { maxlen = $$4 - $$3; max_cid = cid } } END { print max_cid }' > $@
 	@echo "-- selected contig $$(< $@) i.e. scaffold $$(< $@) of the test assembly"
 
-$(EXAMPLE_ASSEMBLY_REFERENCE).fasta $(EXAMPLE_ASSEMBLY_REFERENCE).dam &: $(ASSEMBLY_REFERENCE) $(DATADIR)/scaffold_id | $(DATADIR)
+$(EXAMPLE_ASSEMBLY_REFERENCE).fasta $(EXAMPLE_ASSEMBLY_REFERENCE).dam &: $(ASSEMBLY_REFERENCE_ALL) $(DATADIR)/scaffold_id | $(DATADIR)
 	@echo "-- building example ground-truth assembly ..."
 	DBshow $< $$(< $(DATADIR)/scaffold_id) | tee $@ | fasta2DAM -i $(EXAMPLE_ASSEMBLY_REFERENCE).dam
 
@@ -49,7 +47,15 @@ $(EXAMPLE_READS).fasta $(EXAMPLE_READ_MAPPING): $(EXAMPLE_ASSEMBLY_REFERENCE).da
 	@echo "-- simulating reads ..."
 	simulator -m25000 -s12500 -e.13 -c20 -r$(SIMULATED_READS_SEED) -M$(EXAMPLE_READ_MAPPING) $< > $@
 
-checksum.md5: result-files.lst $(DIST_SOURCE_FILES)
+.PHONY: fetch-data
+fetch-data: $(ASSEMBLY_REFERENCE_ALL) $(ASSEMBLY_TEST)
+
+$(ASSEMBLY_REFERENCE_ALL) $(ASSEMBLY_TEST) &: | $(DATADIR)
+	wget --timestamping --no-directories --directory-prefix=$(@D) $(patsubst $(DATADIR)/%,$(REMOTE_DATA)/%,$(ASSEMBLY_REFERENCE).tar.gz $(ASSEMBLY_TEST).gz)
+	cd $(@D) && tar -xzf $(notdir $(ASSEMBLY_REFERENCE).tar.gz)
+	cd $(@D) && gunzip --force --keep $(notdir $(ASSEMBLY_TEST).gz)
+
+checksum.md5: result-files.lst $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS)
 	md5sum $$(< $<) > $@
 
 $(BINDIR)/%: | $(BINDIR)
