@@ -58,10 +58,8 @@ $(ASSEMBLY_REFERENCE_ALL) $(ASSEMBLY_TEST) &: | $(DATADIR)
 checksum.md5: result-files.lst $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS)
 	md5sum $$(< $<) > $@
 
-$(BINDIR)/%: | $(BINDIR)
-	id=$$(docker create dentist:$(DENTIST_VERSION)) && \
-	trap 'docker rm $$id' exit && \
-	docker cp "$$id:$$(docker run dentist:ubuntu which $*)" $@
+$(BINDIR)/%: dentist_$(DENTIST_VERSION).sif | $(BINDIR)
+	singularity run -B./bin:/app/bin $< install -t /app/bin "\$$(which $*)"
 
 .PHONY: binaries
 binaries: $(BINARIES)
