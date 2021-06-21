@@ -67,7 +67,7 @@ $(BINDIR)/%: | $(BINDIR)
 binaries: $(BINARIES)
 
 dentist_%.sif:
-	singularity build $@ docker-daemon://dentist:$*
+	singularity build $(patsubst B,--force,$(findstring B,$(MAKEFLAGS))) $@ docker-daemon://dentist:$*
 
 $(DATADIR) $(BINDIR):
 	mkdir -p $@
