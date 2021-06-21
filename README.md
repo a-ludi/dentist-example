@@ -11,7 +11,9 @@ Quickly test [DENTIST][dentist] with this example workflow. It uses part of the
 _D. melanogaster_ reference assembly (dm6) and simulated reads to demonstrate
 the workflow. The full source code of DENTIST is available at <https://github.com/a-ludi/dentist>.
 
-If you experience issues, please take a look at the [troubleshooting section](#troubleshooting). If that does not help, please create an issue at [the DENTIST repository](https://github.com/a-ludi/dentist/issues).
+If you experience issues, please search the issues at [DENTIST's
+repository](https://github.com/a-ludi/dentist/issues) or create a new one if
+you cannot find an answer to your problem.
 
 
 Table of Contents
@@ -47,7 +49,7 @@ First of all download the test data and workflow and switch to the
 `dentist-example` directory.
 
 ```sh
-wget https://github.com/a-ludi/dentist-example/releases/download/v1.0.2-1/dentist-example.tar.gz
+wget https://github.com/a-ludi/dentist-example/releases/download/v2.0.0-1/dentist-example.tar.gz
 tar -xzf dentist-example.tar.gz
 cd dentist-example
 ```
@@ -105,33 +107,6 @@ it to finish.
 
 
 [dentist-install]: https://github.com/a-ludi/dentist#executing-on-a-cluster
-
-
-Troubleshooting
----------------
-
-If this section does not solve your problem, please create an issue at [the DENTIST repository](https://github.com/a-ludi/dentist/issues).
-
-When executed on a single machine, `snakemake` will sometimes quit with an
-`ProtectedOutputException` ([Snakemake bug report filed][sm-884]). You may try the follow snippet to get `snakemake`
-back on track:
-
-```sh
-# make sure workdir exists to avoid errors with chmod
-mkdir -p workdir
-# keep track of the number of retries to avoid an infinite loop
-RETRY=0
-# try running snakemake as long as the gap-closed assembly was not created
-# and we have retries left
-while [[ ! -f "gap-closed.fasta" ]] && (( RETRY++ < 3 )); do
-    # allow snakemake to overwrite protected output
-    chmod -R u+w workdir
-    # try snakemake...
-    snakemake --configfile=snakemake.yml --use-singularity --cores=all
-done
-```
-
-[sm-884]: https://github.com/snakemake/snakemake/issues/884
 
 
 Citation
