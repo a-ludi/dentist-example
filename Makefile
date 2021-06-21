@@ -14,6 +14,7 @@ DIST_SOURCE_FILES=cluster.yml dentist.json profile-slurm.drmaa.yml profile-slurm
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
 DENTIST_VERSION=1.0.2
 DENTIST_CONTAINER=dentist_$(DENTIST_VERSION).sif
+DOCKER_IMAGE=aludi/dentist
 BINDIR=bin
 BINARIES=$(addprefix $(BINDIR)/,Catrack computeintrinsicqv daccord daligner DAM2fasta damapper DAScover DASqv datander DB2fasta DBa2b DBb2a DBdump DBdust DBmv DBrm DBshow DBsplit DBstats DBtrim DBwipe dentist dumpLA fasta2DAM fasta2DB LAa2b LAb2a LAcat LAcheck LAdump LAmerge lasfilteralignments LAshow LAsort LAsplit rangen simulator TANmask)
 RUNTIME_ENVIRONMENT=$(DENTIST_CONTAINER) $(BINARIES)
@@ -65,7 +66,7 @@ $(BINDIR)/%: dentist_$(DENTIST_VERSION).sif | $(BINDIR)
 binaries: $(BINARIES)
 
 dentist_%.sif:
-	singularity build $(patsubst B,--force,$(findstring B,$(MAKEFLAGS))) $@ docker-daemon://dentist:$*
+	singularity build $(patsubst B,--force,$(findstring B,$(MAKEFLAGS))) $@ docker-daemon://$(DOCKER_IMAGE):$*
 
 $(DATADIR) $(BINDIR):
 	mkdir -p $@
