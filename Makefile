@@ -95,10 +95,64 @@ dist: $(DIST_TARBALL)
 .PHONY: tar
 tar: $(SOURCE_TARBALL)
 
+# --- Tests ---
+
+SINGULARITY_TESTS=.passed-singularity-dentist-dependency-check \
+				  .passed-singularity-snakemake-syntax-check \
+				  .passed-singularity-snakemake-workflow
+
+
+.passed-singularity-dentist-dependency-check: $(DENTIST_CONTAINER)
+	singularity exec $(DENTIST_CONTAINER) dentist -d
+	touch $@
+
+
+.passed-singularity-snakemake-syntax-check: $(DENTIST_CONTAINER)
+	$(snakemake) --configfile=snakemake.yml --use-singularity --config dentist_container=$(DENTIST_CONTAINER) -nqj1
+	touch $@
+
+
+.passed-singularity-snakemake-workflow: $(MAIN_OUTPUTS) $(DENTIST_CONTAINER)
+	$(MAKE) clean-workflow
+	$(snakemake) --configfile=snakemake.yml --use-singularity --config dentist_container=$(DENTIST_CONTAINER) -jall
+	$(MAKE) check-results
+	touch $@
+
+
+PRECOMPILED_BINARIES_TESTS=.passed-precompiled-binaries-dentist-dependency-check \
+				           .passed-precompiled-binaries-snakemake-syntax-check \
+				           .passed-precompiled-binaries-snakemake-workflow
+
+
+.passed-precompiled-binaries-dentist-dependency-check: $(BINARIES)
+	PATH="$(PWD)/$(BINDIR):$$PATH" dentist -d
+	touch $@
+
+
+.passed-precompiled-binaries-snakemake-syntax-check: $(BINARIES)
+	PATH="$(PWD)/$(BINDIR):$$PATH" $(snakemake) --configfile=snakemake.yml -nqj1
+	touch $@
+
+
+.passed-precompiled-binaries-snakemake-workflow: $(MAIN_OUTPUTS) $(BINARIES)
+	$(MAKE) clean-workflow
+	PATH="$(PWD)/$(BINDIR):$$PATH" $(snakemake) --configfile=snakemake.yml -jall
+	$(MAKE) check-results
+	touch $@
+
+
+.PHONY: test-singularity
+test-singularity: $(SINGULARITY_TESTS)
+
+
+.PHONY: test-precompiled-binariesaries
+test-precompiled-binariesaries: $(PRECOMPILED_BINARIES_TESTS)
+
+
 .PHONY: test
-test: $(MAIN_OUTPUTS)
-	#singularity exec $(DENTIST_CONTAINER) dentist -d
-	PATH="$(BINDIR)" dentist -d
-	$(snakemake) --configfile=snakemake.yml -nq
-	$(snakemake) --configfile=snakemake.yml --use-singularity -j1 -f validate_dentist_config
-	PATH="$(BINDIR):$$PATH" $(snakemake) --configfile=snakemake.yml -j1 -f validate_dentist_config
+test: test-singularity test-precompiled-binariesaries
+
+
+.PHONY: check-results
+check-results:
+	./check-results.sh

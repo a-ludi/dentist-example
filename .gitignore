@@ -8,3 +8,5 @@
 *.dam
 .snakemake
 *.tar.gz
+# test result files
+.passed-*
