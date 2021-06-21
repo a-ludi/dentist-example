@@ -84,6 +84,10 @@ clean:
 tempclean:
 	rm -f $(TEMP_OUTPUTS)
 
+.PHONY: clean-workflow
+clean-workflow:
+	rm -rf .snakemake gap-closed.{agp,fasta,closed-gaps.bed} logs workdir
+
 .PHONY: dist
 dist: $(DIST_TARBALL)
 
