@@ -91,7 +91,7 @@ Execute the workflow on a *SLURM cluster*:
 ```sh
 mkdir -p "$HOME/.config/snakemake/slurm"
 # select one of the profile-slurm.{drmaa,submit-async,submit-sync}.yml files
-cp -v "profile-slurm.sync.yml" "$HOME/.config/snakemake/slurm/config.yml"
+cp -v "profile-slurm.sync.yml" "$HOME/.config/snakemake/slurm/config.yaml"
 # execute using the cluster profile
 snakemake --configfile=snakemake.yml --use-singularity --profile=slurm
 
