@@ -130,4 +130,4 @@ License
 This project is licensed under MIT License (see [LICENSE](./LICENSE)).
 
 
-[dentist]: https://github.com/a-ludi/dentist "Source Code of DENTIST at GitHub"
+[dentist]: https://a-ludi.github.io/dentist/
