@@ -73,7 +73,7 @@ laptop with an Intel® Core™ i5-5200U CPU @ 2.20GHz.
 
 ### Execution in Singularity Container
 
-Execute the workflow inside a convenient Sinuglarity image by adding `--use-singularity` to the call to Snakemake:
+Execute the workflow inside a convenient Singularity image by adding `--use-singularity` to the call to Snakemake:
 
 ```sh
 # run the workflow
@@ -99,7 +99,7 @@ snakemake --configfile=snakemake.yml --use-singularity --profile=slurm
 md5sum -c checksum.md5
 ```
 
-If you want to run with a differnt cluster manager or in the cloud, please
+If you want to run with a different cluster manager or in the cloud, please
 read the advice in [DENTIST's README][dentist-cluster]. The easiest option is
 to adjust the `srun` command in `profile-slurm.sync.yml` to your cluster, e.g.
 `qsub -sync yes`. The command must submit a job to the cluster and *wait* for
