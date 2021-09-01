@@ -307,25 +307,6 @@ function check_inputs()
 }
 
 
-function check_md5sum_stdin()
-{
-    local FILE="$1"
-    local ERROR="${2:-"corrupted file: $FILE"}"
-
-    if [[ ! -v PRINT_CHECKSUMS ]]
-    then
-        md5sum -c <(echo "${CHECKSUMS["$FILE"]}  -") &>> "$LOG" \
-        || log_error "$ERROR"
-    else
-        {
-            echo -n "    [$FILE]="
-            md5sum - | tr -d ' -'
-        } >> "$PRINT_CHECKSUMS"
-        skip_test
-    fi
-}
-
-
 function check_mask()
 {
     local DB="$1"
