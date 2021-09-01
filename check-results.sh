@@ -295,6 +295,7 @@ function check_inputs()
 {
     ON_ERROR=fail_immediately \
     MESSAGE='corrupted input DBs; try removing the entire directory and extracting dentist-example.tar.gz again' \
+    ASSERTION="${FUNCNAME[0]}" \
     check_md5sums_partial \
         workdir/.assembly-test.bps \
         workdir/.assembly-test.hdr \
@@ -382,6 +383,7 @@ function check_preliminary_gap_closed()
 
 function check_validation_result()
 {
+    ASSERTION="${FUNCNAME[0]}" \
     check_md5sums_partial \
         workdir/validation-report.json \
         workdir/skip-gaps.txt
@@ -393,6 +395,7 @@ function check_gap_closed_assembly()
 {
     grep -vE '^#\s*TOOL:' gap-closed.agp \
     | check_md5sum_stdin gap-closed.agp
+    ASSERTION="${FUNCNAME[0]}" \
     check_md5sums_partial \
         gap-closed.closed-gaps.bed \
         gap-closed.fasta
