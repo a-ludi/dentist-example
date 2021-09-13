@@ -173,7 +173,7 @@ CHECKSUMS=(
 
 
 # Check failures will be stored here
-ERRORS=()
+export ERROR_FILE
 
 # Report the test as skipped; do not record an error; continue execution
 ERROR_SKIP=1
@@ -191,7 +191,8 @@ function __fail()
     local ASSERTION="${ASSERTION:-"${FUNCNAME[2]}"}"
     local IFS=' '
 
-    ERRORS+=( "[FAILED] $ASSERTION: $*" )
+    echo "[FAILED] $ASSERTION: $*" >> "$ERROR_FILE"
+
     return "$ERROR_LEVEL"
 }
 
@@ -228,6 +229,8 @@ function prepare_output_files()
 
     # clear the log file
     cat /dev/null > "$LOG"
+    # create temp file for errors
+    ERROR_FILE="$(mktemp --tmpdir check-results.XXXXXX.err)"
 
     trap finish_output_files exit
 }
@@ -240,6 +243,8 @@ function finish_output_files()
     then
         echo ")" >> "$PRINT_CHECKSUMS"
     fi
+
+    rm -f "$ERROR_FILE"
 }
 
 
@@ -267,7 +272,7 @@ function check_md5sums_partial()
         (FILENAME != "-" && $2 in selection) { print }
     ' - <<<"$*" checksum.md5 \
     | md5sum -c - &>> "$LOG" \
-    || "$ON_ERROR" "$MESSAGE"
+    || ASSERTION="${ASSERTION:-"${FUNCNAME[1]}"}" "$ON_ERROR" "$MESSAGE"
 }
 
 
@@ -280,7 +285,7 @@ function check_md5sum_stdin()
     if [[ ! -v PRINT_CHECKSUMS ]]
     then
         md5sum -c <(echo "${CHECKSUMS["$FILE"]}  -") &>> "$LOG" \
-        || log_error "$ERROR"
+        || ASSERTION="${ASSERTION:-"${FUNCNAME[1]}"}" log_error "$ERROR"
     else
         {
             echo -n "    [${FILE@Q}]="
@@ -323,15 +328,14 @@ function check_mask()
 function check_alignment()
 {
     local IFS=' '
-    ASSERTION="${FUNCNAME[0]} $*"
     local DB_A="$1"
     local DB_B="${2:-"$DB_A"}"
     local BLOCK_A="${3:+.}${3:-}"
     local BLOCK_B="${4:+.}${4:-}"
-    LAS="workdir/$DB_A$BLOCK_A.$DB_B$BLOCK_B.las"
+    local LAS="workdir/$DB_A$BLOCK_A.$DB_B$BLOCK_B.las"
 
     LAdump -cdtl "workdir/$DB_A" "workdir/$DB_B" "$LAS" \
-    | check_md5sum_stdin "$LAS"
+    | ASSERTION="${FUNCNAME[0]} $*" check_md5sum_stdin "$LAS"
 }
 
 
@@ -443,7 +447,7 @@ function all_checks()
 
     if (( NUM_FAILED > 0 ))
     then
-        echo "${ERRORS[*]}"
+        cat "$ERROR_FILE"
         echo
         echo "Details can be found in $LOG"
     fi
