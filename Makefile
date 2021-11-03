@@ -65,6 +65,9 @@ $(BINDIR)/%: dentist_$(DENTIST_VERSION).sif | $(BINDIR)
 .PHONY: binaries
 binaries: $(BINARIES)
 
+snakemake.yml: snakemake.template.yml $(DENTIST_CONTAINER)
+	sed 's!{{CONTAINER}}!$(DENTIST_CONTAINER)!' $< > $@
+
 dentist_%.sif:
 	singularity build $(patsubst B,--force,$(findstring B,$(MAKEFLAGS))) $@ docker-daemon://$(DOCKER_IMAGE):$*
 
