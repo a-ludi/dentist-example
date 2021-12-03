@@ -10,11 +10,12 @@ EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
 DOC_FILES=README.md
-DIST_SOURCE_FILES=cluster.yml dentist.json profile-slurm.drmaa.yml profile-slurm.submit-async.yml profile-slurm.submit-sync.yml Snakefile snakemake.yml
+DIST_SOURCE_FILES=cluster.yml dentist.json envs/dentist.yml profile-slurm.drmaa.yml profile-slurm.submit-async.yml profile-slurm.submit-sync.yml Snakefile snakemake.yml
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
 DENTIST_VERSION=v2.0.0
 DENTIST_CONTAINER=dentist_$(DENTIST_VERSION).sif
 DOCKER_IMAGE=aludi/dentist
+CONDA_PREFIX=.conda-env/dentist-core_$(DENTIST_VERSION)
 BINDIR=bin
 BINARIES=$(addprefix $(BINDIR)/,Catrack computeintrinsicqv daccord daligner DAM2fasta damapper DAScover DASqv datander DB2fasta DBa2b DBb2a DBdump DBdust DBmv DBrm DBshow DBsplit DBstats DBtrim DBwipe dentist dumpLA fasta2DAM fasta2DB LAa2b LAb2a LAcat LAcheck LAdump LAmerge lasfilteralignments LAshow LAsort LAsplit rangen simulator TANmask)
 RUNTIME_ENVIRONMENT=$(DENTIST_CONTAINER) $(BINARIES)
@@ -27,6 +28,7 @@ MAIN_OUTPUTS=$(EXAMPLE_ASSEMBLY_REFERENCE).fasta $(EXAMPLE_ASSEMBLY_TEST).fasta 
 ALL_OUTPUTS=$(MAIN_OUTPUTS) $(TEMP_OUTPUTS)
 
 snakemake=$(shell command -v snakemake)
+conda=conda
 
 .PHONY: all
 all: $(MAIN_OUTPUTS)
@@ -59,14 +61,26 @@ $(ASSEMBLY_REFERENCE_ALL) $(ASSEMBLY_TEST) &: | $(DATADIR)
 checksum.md5: result-files.lst $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS)
 	md5sum $$(< $<) > $@
 
-$(BINDIR)/%: dentist_$(DENTIST_VERSION).sif | $(BINDIR)
-	singularity run -B./bin:/app/bin $< install -t /app/bin "\$$(which $*)"
+$(BINDIR)/%: $(CONDA_PREFIX)/.timestamp | $(BINDIR)
+	install $(CONDA_PREFIX)/bin/$(@F) $@
+
+$(CONDA_PREFIX)/.timestamp: envs/dentist.yml
+	mkdir -p $(CONDA_PREFIX)
+	rm -rf $(CONDA_PREFIX)
+	$(conda) env create --prefix $(CONDA_PREFIX) --file $<
+	touch $@
 
 .PHONY: binaries
 binaries: $(BINARIES)
 
+Snakefile: external/dentist/snakemake/Snakefile patches/conda-env.patch
+	patch -o $@ $^
+
 snakemake.yml: snakemake.template.yml $(DENTIST_CONTAINER)
 	sed 's!{{CONTAINER}}!$(DENTIST_CONTAINER)!' $< > $@
+
+envs/dentist.yml: envs/dentist.template.yml
+	sed 's!{{DENTIST_VERSION}}!$(DENTIST_VERSION:v%=%)!' $< > $@
 
 dentist_%.sif:
 	singularity build $(patsubst B,--force,$(findstring B,$(MAKEFLAGS))) $@ docker-daemon://$(DOCKER_IMAGE):$*
@@ -122,6 +136,28 @@ SINGULARITY_TESTS=.passed-singularity-dentist-dependency-check \
 	touch $@
 
 
+CONDA_TESTS=.passed-conda-dentist-dependency-check \
+			.passed-conda-snakemake-syntax-check \
+			.passed-conda-snakemake-workflow
+
+
+.passed-conda-dentist-dependency-check: $(BINARIES) $(CONDA_PREFIX)/.timestamp
+	conda run --prefix $(CONDA_PREFIX) dentist -d
+	touch $@
+
+
+.passed-conda-snakemake-syntax-check: $(BINARIES) $(CONDA_PREFIX)/.timestamp
+	$(snakemake) --use-conda --conda-frontend=conda --configfile=snakemake.yml -nqj1
+	touch $@
+
+
+.passed-conda-snakemake-workflow: $(MAIN_OUTPUTS) $(BINARIES) $(CONDA_PREFIX)/.timestamp
+	$(MAKE) clean-workflow
+	PATH="$(PWD)/$(BINDIR):$$PATH" $(snakemake) --use-conda --conda-frontend=conda --configfile=snakemake.yml -jall
+	$(MAKE) check-results
+	touch $@
+
+
 PRECOMPILED_BINARIES_TESTS=.passed-precompiled-binaries-dentist-dependency-check \
 				           .passed-precompiled-binaries-snakemake-syntax-check \
 				           .passed-precompiled-binaries-snakemake-workflow
@@ -148,12 +184,16 @@ PRECOMPILED_BINARIES_TESTS=.passed-precompiled-binaries-dentist-dependency-check
 test-singularity: $(SINGULARITY_TESTS)
 
 
+.PHONY: test-conda
+test-conda: $(CONDA_TESTS)
+
+
 .PHONY: test-precompiled-binariesaries
 test-precompiled-binariesaries: $(PRECOMPILED_BINARIES_TESTS)
 
 
 .PHONY: test
-test: test-singularity test-precompiled-binariesaries
+test: test-singularity test-conda test-precompiled-binariesaries
 
 
 .PHONY: check-results

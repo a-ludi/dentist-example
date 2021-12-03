@@ -71,6 +71,22 @@ Execution takes approx. 7 minutes and a maximum of 1.7GB memory on my little
 laptop with an Intel® Core™ i5-5200U CPU @ 2.20GHz.
 
 
+### Use Conda
+
+Make sure [Conda][conda] is installed on your system. You can then use DENTIST like so:
+
+```sh
+# run the workflow
+snakemake --configfile=snakemake.yml --use-conda --cores=all
+
+# validate the files
+md5sum -c checksum.md5
+```
+
+
+[conda]: https://docs.conda.io/projects/conda/
+
+
 ### Execution in Singularity Container
 
 Execute the workflow inside a convenient Singularity image by adding `--use-singularity` to the call to Snakemake:
@@ -92,8 +108,8 @@ Execute the workflow on a *SLURM cluster*:
 mkdir -p "$HOME/.config/snakemake/slurm"
 # select one of the profile-slurm.{drmaa,submit-async,submit-sync}.yml files
 cp -v "profile-slurm.sync.yml" "$HOME/.config/snakemake/slurm/config.yaml"
-# execute using the cluster profile
-snakemake --configfile=snakemake.yml --use-singularity --profile=slurm
+# execute using the cluster profile and conda
+snakemake --configfile=snakemake.yml --use-conda --profile=slurm
 
 # validate the files
 md5sum -c checksum.md5
