@@ -71,8 +71,11 @@ def prefetch_conda_env(env_file):
                 persistence=Persistence(conda_prefix=workflow.conda_prefix),
                 conda_frontend=workflow.conda_frontend,
                 singularity_args=workflow.singularity_args,
-                sourcecache=workflow.sourcecache
+                sourcecache=getattr(workflow, "sourcecache", None)
             ))))
+
+    # This makes older versions of Snakemake work
+    dag.workflow.workflow = dag.workflow
 
     conda_env = Env(
         env_file,
@@ -93,7 +96,11 @@ def shellcmd(cmd):
     elif workflow.use_conda:
         from snakemake.deployment.conda import Conda
 
-        conda = Conda(singularity_image, prefix_path=workflow.conda_base_path)
+        conda = None
+        if hasattr(workflow, "conda_base_path"):
+            conda = Conda(singularity_image, prefix_path=workflow.conda_base_path)
+        else:
+            conda = Conda(singularity_image)
         conda_cmd = conda.shellcmd(conda_env.path, cmd)
 
         return conda_cmd

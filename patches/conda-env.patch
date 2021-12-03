@@ -1,5 +1,5 @@
 diff --git a/external/dentist/snakemake/Snakefile b/Snakefile
-index f97dd9c..f429989 100644
+index f97dd9c..bb64eb0 100644
 --- a/external/dentist/snakemake/Snakefile
 +++ b/Snakefile
 @@ -21,6 +21,9 @@ insertions_batch = None
@@ -23,7 +23,7 @@ index f97dd9c..f429989 100644
          return
  
      from snakemake.deployment.singularity import Image
-@@ -41,15 +46,41 @@ def prefetch_singularity_image(container_url):
+@@ -41,15 +46,44 @@ def prefetch_singularity_image(container_url):
                  persistence=Persistence(singularity_prefix=workflow.singularity_prefix)
              ))))
  
@@ -57,8 +57,11 @@ index f97dd9c..f429989 100644
 +                persistence=Persistence(conda_prefix=workflow.conda_prefix),
 +                conda_frontend=workflow.conda_frontend,
 +                singularity_args=workflow.singularity_args,
-+                sourcecache=workflow.sourcecache
++                sourcecache=getattr(workflow, "sourcecache", None)
 +            ))))
++
++    # This makes older versions of Snakemake work
++    dag.workflow.workflow = dag.workflow
 +
 +    conda_env = Env(
 +        env_file,
@@ -70,21 +73,25 @@ index f97dd9c..f429989 100644
  
  
  def shellcmd(cmd):
-@@ -59,6 +90,13 @@ def shellcmd(cmd):
+@@ -59,6 +93,17 @@ def shellcmd(cmd):
          return singularity.shellcmd(dentist_container, cmd,
                                      workflow.singularity_args,
                                      container_workdir=workflow.singularity_prefix)
 +    elif workflow.use_conda:
 +        from snakemake.deployment.conda import Conda
 +
-+        conda = Conda(singularity_image, prefix_path=workflow.conda_base_path)
++        conda = None
++        if hasattr(workflow, "conda_base_path"):
++            conda = Conda(singularity_image, prefix_path=workflow.conda_base_path)
++        else:
++            conda = Conda(singularity_image)
 +        conda_cmd = conda.shellcmd(conda_env.path, cmd)
 +
 +        return conda_cmd
      else:
          return cmd
  
-@@ -747,10 +785,14 @@ validation_blocks = config["validation_blocks"]
+@@ -747,10 +792,14 @@ validation_blocks = config["validation_blocks"]
  workflow_flags_names = ["full_validation", "no_purge_output"]
  workflow_flags = dict(((flag, config.get(flag, False))  for flag in workflow_flags_names))
  dentist_container = config.get("dentist_container", "docker://aludi/dentist:stable")
@@ -99,7 +106,7 @@ index f97dd9c..f429989 100644
  
  # workflow files
  reference_fasta = inputs["reference"]
-@@ -902,6 +944,7 @@ checkpoint reference2dam:
+@@ -902,6 +951,7 @@ checkpoint reference2dam:
      input: reference_fasta
      output: *db_files(reference)
      container: dentist_container
@@ -107,7 +114,7 @@ index f97dd9c..f429989 100644
      shell:
          "fasta2DAM {output[0]} {input} && DBsplit {additional_reference_dbsplit_options} {output[0]}"
  
-@@ -912,6 +955,7 @@ checkpoint reference2dam:
+@@ -912,6 +962,7 @@ checkpoint reference2dam:
  #         input: db_files(reference_fasta)
  #         output: *db_files(reference)
  #         container: dentist_container
@@ -115,7 +122,7 @@ index f97dd9c..f429989 100644
  #         shell:
  #             "fasta2DAM {output[0]} {input} && DBsplit {additional_reference_dbsplit_options} {output[0]}"
  # else:
-@@ -919,6 +963,7 @@ checkpoint reference2dam:
+@@ -919,6 +970,7 @@ checkpoint reference2dam:
  #         input: reference_fasta
  #         output: *db_files(reference)
  #         container: dentist_container
@@ -123,7 +130,7 @@ index f97dd9c..f429989 100644
  #         shell:
  #             "fasta2DAM {output[0]} {input} && DBsplit {additional_reference_dbsplit_options} {output[0]}"
  
-@@ -933,6 +978,7 @@ checkpoint preliminary_gap_closed2dam:
+@@ -933,6 +985,7 @@ checkpoint preliminary_gap_closed2dam:
      input: preliminary_gap_closed_fasta
      output: *db_files(preliminary_gap_closed)
      container: dentist_container
@@ -131,7 +138,7 @@ index f97dd9c..f429989 100644
      shell:
          "fasta2DAM {output[0]} {input} && DBsplit {additional_reference_dbsplit_options} {output[0]}"
  
-@@ -951,6 +997,7 @@ rule mask_dust:
+@@ -951,6 +1004,7 @@ rule mask_dust:
      params:
          dustcmd = prepare_flags(lambda : generate_options_for("DBdust reference", dentist_config_file)),
      container: dentist_container
@@ -139,7 +146,7 @@ index f97dd9c..f429989 100644
      shell:
          "{params.dustcmd} {workdir_}/{wildcards.dam}"
  
-@@ -972,6 +1019,7 @@ rule self_alignment_block:
+@@ -972,6 +1026,7 @@ rule self_alignment_block:
      threads: max_threads
      log: log_file("self-alignment.{dam}.{block_ref}.{block_reads}")
      container: dentist_container
@@ -147,7 +154,7 @@ index f97dd9c..f429989 100644
      shell:
          """
              {{
-@@ -992,6 +1040,7 @@ rule self_alignment:
+@@ -992,6 +1047,7 @@ rule self_alignment:
          dbs = lambda _, input: input.db[0]
      log: log_file("self-alignment.{dam}")
      container: dentist_container
@@ -155,7 +162,7 @@ index f97dd9c..f429989 100644
      shell: LAmerge()
  
  
-@@ -1006,6 +1055,7 @@ rule mask_self:
+@@ -1006,6 +1062,7 @@ rule mask_self:
          mask_files(join(workdir_, "{dam}.dam"), self_mask)
      log: log_file("mask-self.{dam}")
      container: dentist_container
@@ -163,7 +170,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist mask --config={dentist_config_file} {dentist_flags} {input.dam[0]} {input.alignment} {self_mask} 2> {log}"
  
-@@ -1023,6 +1073,7 @@ rule tandem_alignment_block:
+@@ -1023,6 +1080,7 @@ rule tandem_alignment_block:
      log: log_file("tandem-alignment.{dam}.{block}")
      threads: max_threads
      container: dentist_container
@@ -171,7 +178,7 @@ index f97dd9c..f429989 100644
      shell:
          """
              {{
-@@ -1043,6 +1094,7 @@ rule tandem_alignment:
+@@ -1043,6 +1101,7 @@ rule tandem_alignment:
          dbs = lambda _, input: input.db[0]
      log: log_file("tandem-alignment.{dam}")
      container: dentist_container
@@ -179,7 +186,7 @@ index f97dd9c..f429989 100644
      shell: LAmerge()
  
  
-@@ -1058,6 +1110,7 @@ rule mask_tandem_block:
+@@ -1058,6 +1117,7 @@ rule mask_tandem_block:
          tanmask_options = prepare_flags(additional_tanmask_options)
      log: log_file("mask-tandem.{dam}.{block}")
      container: dentist_container
@@ -187,7 +194,7 @@ index f97dd9c..f429989 100644
      shell:
          "TANmask {params[tanmask_options]} {params.reference_stub} {input[alignment]} &> {log}"
  
-@@ -1072,6 +1125,7 @@ rule mask_tandem:
+@@ -1072,6 +1132,7 @@ rule mask_tandem:
          mask_files(join(workdir_, "{dam}.dam"), tandem_mask)
      log: log_file("mask-tandem.{dam}")
      container: dentist_container
@@ -195,7 +202,7 @@ index f97dd9c..f429989 100644
      shell:
          "Catrack -v {input.db[0]} {tandem_mask} &> {log}"
  
-@@ -1083,6 +1137,7 @@ checkpoint reads2db:
+@@ -1083,6 +1144,7 @@ checkpoint reads2db:
      params:
          fasta2dazz = fasta2dazz_command(reads)
      container: dentist_container
@@ -203,7 +210,7 @@ index f97dd9c..f429989 100644
      shell:
          "{params.fasta2dazz} {output[0]} {input} && DBsplit {additional_reads_dbsplit_options} {output[0]}"
  
-@@ -1112,6 +1167,7 @@ rule ref_vs_reads_alignment_block:
+@@ -1112,6 +1174,7 @@ rule ref_vs_reads_alignment_block:
      threads: max_threads
      log: log_file("ref-vs-reads-alignment.{block_reads}")
      container: dentist_container
@@ -211,7 +218,7 @@ index f97dd9c..f429989 100644
      shell:
          """
              {{
-@@ -1132,6 +1188,7 @@ rule ref_vs_reads_alignment:
+@@ -1132,6 +1195,7 @@ rule ref_vs_reads_alignment:
          dbs = lambda _, input: (input.refdb[0], input.readsdb[0])
      log: log_file("ref-vs-reads-alignment")
      container: dentist_container
@@ -219,7 +226,7 @@ index f97dd9c..f429989 100644
      shell: LAmerge()
  
  
-@@ -1146,6 +1203,7 @@ rule reads_vs_ref_alignment:
+@@ -1146,6 +1210,7 @@ rule reads_vs_ref_alignment:
          dbs = lambda _, input: (input.readsdb[0], input.refdb[0])
      log: log_file("reads-vs-ref-alignment")
      container: dentist_container
@@ -227,7 +234,7 @@ index f97dd9c..f429989 100644
      shell: LAmerge()
  
  
-@@ -1159,6 +1217,7 @@ rule mask_reads:
+@@ -1159,6 +1224,7 @@ rule mask_reads:
          mask_files(reference, reads_mask)
      log: log_file("mask-reads")
      container: dentist_container
@@ -235,7 +242,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist mask --config={dentist_config_file} {dentist_flags} {reference} {reads} {ref_vs_reads_alignment} {reads_mask} 2> {log}"
  
-@@ -1178,6 +1237,7 @@ rule propagate_mask_to_reads_block:
+@@ -1178,6 +1244,7 @@ rule propagate_mask_to_reads_block:
      log: log_file("propagate-mask-to-reads.{mask}.{block_reads}")
      group: "propagate_mask"
      container: dentist_container
@@ -243,7 +250,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist propagate-mask --config={dentist_config_file} {dentist_flags} -m {params[inmask]} {reference} {reads} {input[alignment]} {params[outmask]} 2> {log}"
  
-@@ -1197,6 +1257,7 @@ rule propagate_mask_back_to_reference_block:
+@@ -1197,6 +1264,7 @@ rule propagate_mask_back_to_reference_block:
      log: log_file("propagate-mask-back-to-reference-block.{mask}.{block_reads}")
      group: "propagate_mask"
      container: dentist_container
@@ -251,7 +258,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist propagate-mask --config={dentist_config_file} {dentist_flags} -m {params[inmask]} {reads} {reference} {input[alignment]} {params[outmask]} 2> {log}"
  
-@@ -1227,6 +1288,7 @@ rule propagate_mask_back_to_reference:
+@@ -1227,6 +1295,7 @@ rule propagate_mask_back_to_reference:
          block_masks = ["{mask}"] + pseudo_block_masks(homogenized_mask("{mask}"), reads)
      log: log_file("propagate-mask-back-to-reference.{mask}")
      container: dentist_container
@@ -259,7 +266,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist merge-masks --config={dentist_config_file} {dentist_flags} {reference} {params[merged_mask]} {params[block_masks]} 2> {log}"
  
-@@ -1252,6 +1314,7 @@ checkpoint collect:
+@@ -1252,6 +1321,7 @@ checkpoint collect:
      threads: max_threads
      log: log_file("collect")
      container: dentist_container
@@ -267,7 +274,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist collect --config={input.config} {dentist_flags} --threads={params.main_threads} --auxiliary-threads={params.auxiliary_threads} --mask={params.masks} {input.refdb[0]} {input.readsdb[0]} {input.alignment} {output} 2> {log}"
  
-@@ -1273,6 +1336,7 @@ rule process:
+@@ -1273,6 +1343,7 @@ rule process:
      threads: max_threads
      log: log_file("process.{batch_id}")
      container: dentist_container
@@ -275,7 +282,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist process --config={input.config} {dentist_flags} --threads={params.main_threads} --auxiliary-threads={params.auxiliary_threads} --mask={params.masks} --batch={params.batch_range} {input.refdb[0]} {input.readsdb[0]} {input.pile_ups} {output} 2> {log}"
  
-@@ -1302,6 +1366,7 @@ rule merge_insertions:
+@@ -1302,6 +1373,7 @@ rule merge_insertions:
          protected(insertions)
      log: log_file("merge-insertions")
      container: dentist_container
@@ -283,7 +290,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist merge-insertions --config={input.config} {dentist_flags} {output} - 2> {log}"
  
-@@ -1319,6 +1384,7 @@ rule preliminary_output:
+@@ -1319,6 +1391,7 @@ rule preliminary_output:
          revert_options = "--revert={}".format(",".join(preliminary_output_revert_options))
      log: log_file("preliminary-output")
      container: dentist_container
@@ -291,7 +298,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist output --config={input.config} {dentist_flags} --agp={output[agp]} --closed-gaps-bed={output[bed]} {params.revert_options} {input.refdb[0]} {input.insertions} {output[fasta]} 2> {log}"
  
-@@ -1343,6 +1409,7 @@ rule preliminary_gap_closed_vs_reads_alignment_block:
+@@ -1343,6 +1416,7 @@ rule preliminary_gap_closed_vs_reads_alignment_block:
      threads: max_threads
      log: log_file("gap-closed-vs-reads-alignment.{block_reads}")
      container: dentist_container
@@ -299,7 +306,7 @@ index f97dd9c..f429989 100644
      shell:
          """
              {{
-@@ -1363,6 +1430,7 @@ rule preliminary_gap_closed_vs_reads_alignment:
+@@ -1363,6 +1437,7 @@ rule preliminary_gap_closed_vs_reads_alignment:
          dbs = lambda _, input: (input.refdb[0], input.readsdb[0])
      log: log_file("gap-closed-vs-reads-alignment")
      container: dentist_container
@@ -307,7 +314,7 @@ index f97dd9c..f429989 100644
      shell: LAmerge()
  
  
-@@ -1373,6 +1441,7 @@ rule split_preliminary_gap_closed_vs_reads_alignment:
+@@ -1373,6 +1448,7 @@ rule split_preliminary_gap_closed_vs_reads_alignment:
          split_alignment = alignment_file(preliminary_gap_closed, reads, block_a="@")
      log: log_file("split-gap-closed-vs-reads-alignment")
      container: dentist_container
@@ -315,7 +322,7 @@ index f97dd9c..f429989 100644
      shell:
          "LAsplit {params.split_alignment} {validation_blocks} < {input} &> {log}"
  
-@@ -1385,6 +1454,7 @@ rule preliminary_closed_gaps_bed2mask:
+@@ -1385,6 +1461,7 @@ rule preliminary_closed_gaps_bed2mask:
          mask_files(preliminary_gap_closed, closed_gaps_mask)
      log: log_file("closed-gaps-bed2mask")
      container: dentist_container
@@ -323,7 +330,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist bed2mask --config={dentist_config_file} {dentist_flags} --data-comments --bed={input.bed} {input.db[0]} {closed_gaps_mask} 2> {log}"
  
-@@ -1403,6 +1473,7 @@ rule validate_regions_block:
+@@ -1403,6 +1480,7 @@ rule validate_regions_block:
      threads: max_threads
      log: log_file("validate-regions-block.{block_ref}")
      container: dentist_container
@@ -331,7 +338,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist validate-regions --config={dentist_config_file} --threads={threads} --weak-coverage-mask={params.block_mask} {input.refdb[0]} {input.readsdb[0]} {input.alignment} {closed_gaps_mask} > {output[0]} 2> {log}"
  
-@@ -1426,6 +1497,7 @@ rule weak_coverage_mask:
+@@ -1426,6 +1504,7 @@ rule weak_coverage_mask:
          block_masks = expand(block_mask(weak_coverage_mask, "{block_ref}"), block_ref=range(1, validation_blocks + 1))
      log: log_file("weak-coverage-mask")
      container: dentist_container
@@ -339,7 +346,7 @@ index f97dd9c..f429989 100644
      shell:
          "dentist merge-masks --config={dentist_config_file} {dentist_flags} {input.db[0]} {weak_coverage_mask} {params.block_masks} 2> {log}"
  
-@@ -1456,6 +1528,7 @@ if workflow_flags["no_purge_output"]:
+@@ -1456,6 +1535,7 @@ if workflow_flags["no_purge_output"]:
              agp = gap_closed_agp
          log: log_file("unpurged-output")
          container: dentist_container
@@ -347,7 +354,7 @@ index f97dd9c..f429989 100644
          shell:
              "dentist output --config={input.config} {dentist_flags} --agp={output.agp} --closed-gaps-bed={output.bed} {input.refdb[0]} {input.insertions} {output.fasta} 2> {log}"
  else:
-@@ -1471,6 +1544,7 @@ else:
+@@ -1471,6 +1551,7 @@ else:
              agp = gap_closed_agp
          log: log_file("purged-output")
          container: dentist_container
