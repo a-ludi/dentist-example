@@ -23,6 +23,7 @@ RUNTIME_ENVIRONMENT=$(DENTIST_CONTAINER) $(BINARIES)
 
 SOURCE_TARBALL=dentist-example.source.tar.gz
 DIST_TARBALL=dentist-example.tar.gz
+DIST_MINIMAL_TARBALL=dentist-example.minimal.tar.gz
 TEMP_OUTPUTS=$(EXAMPLE_ASSEMBLY_REFERENCE).dam $(addprefix $(dir $(EXAMPLE_ASSEMBLY_REFERENCE)).$(notdir $(EXAMPLE_ASSEMBLY_REFERENCE)).,bps hdr idx) $(DATADIR)/scaffold_id
 MAIN_OUTPUTS=$(EXAMPLE_ASSEMBLY_REFERENCE).fasta $(EXAMPLE_ASSEMBLY_TEST).fasta $(EXAMPLE_READS).fasta $(EXAMPLE_READ_MAPPING)
 ALL_OUTPUTS=$(MAIN_OUTPUTS) $(TEMP_OUTPUTS)
@@ -94,6 +95,9 @@ $(SOURCE_TARBALL): $(DOC_FILES) $(SOURCE_FILES) checksum.md5
 $(DIST_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) $(RUNTIME_ENVIRONMENT) checksum.md5
 	tar --transform='s|^|dentist-example/|' --dereference -czf $@ $^
 
+$(DIST_MINIMAL_TARBALL): $(DOC_FILES) $(DIST_SOURCE_FILES) $(MAIN_OUTPUTS) checksum.md5
+	tar --transform='s|^|dentist-example/|' --dereference -czf $@ $^
+
 .PHONY: clean
 clean:
 	rm -f $(ALL_OUTPUTS)
@@ -108,6 +112,9 @@ clean-workflow:
 
 .PHONY: dist
 dist: $(DIST_TARBALL)
+
+.PHONY: dist
+dist-minimal: $(DIST_MINIMAL_TARBALL)
 
 .PHONY: tar
 tar: $(SOURCE_TARBALL)
