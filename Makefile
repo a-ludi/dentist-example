@@ -10,7 +10,12 @@ EXAMPLE_READS=$(DATADIR)/reads
 EXAMPLE_READ_MAPPING=$(DATADIR)/reads.mapping.csv
 
 DOC_FILES=README.md
-DIST_SOURCE_FILES=cluster.yml dentist.json envs/dentist.yml profile-slurm.drmaa.yml profile-slurm.submit-async.yml profile-slurm.submit-sync.yml Snakefile snakemake.yml
+DIST_SOURCE_FILES=cluster.yml dentist.json envs/dentist.yml \
+	profile-slurm.drmaa.yml profile-slurm.submit-async.yml \
+	profile-slurm.submit-sync.yml Snakefile snakemake.yml \
+	scripts/validate_dentist_config.py scripts/make_merge_config.py \
+	scripts/skip_gaps.py
+
 SOURCE_FILES=Makefile $(DIST_SOURCE_FILES)
 DENTIST_VERSION=v2.0.0
 DENTIST_CONTAINER=dentist_$(DENTIST_VERSION).sif
@@ -74,8 +79,9 @@ $(CONDA_PREFIX)/.timestamp: envs/dentist.yml
 .PHONY: binaries
 binaries: $(BINARIES)
 
-Snakefile: external/dentist/snakemake/Snakefile patches/conda-env.patch
-	patch -o $@ $^
+Snakefile: external/dentist/snakemake/Snakefile patches/conda-env.patch patches/avoid-run-directive.patch
+	cp $< $@
+	cat $(filter %.patch,$^) | patch $@
 
 snakemake.yml: snakemake.template.yml $(DENTIST_CONTAINER)
 	sed 's!{{CONTAINER}}!$(DENTIST_CONTAINER)!' $< > $@

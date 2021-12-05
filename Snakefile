@@ -717,38 +717,6 @@ def replace_env_rec(obj, envdict=environ):
     return obj
 
 
-def multi_json_loads(s, **kwargs):
-    """Deserialize ``s`` (a ``str``, ``bytes`` or ``bytearray`` instance
-       containing whitespace-separated JSON documents) to a list of Python
-       objects.
-    """
-
-    decoder = json.JSONDecoder(**kwargs)
-
-    start = len(s) - len(s.lstrip())
-    docs = list()
-    while start < len(s):
-        doc, pos = decoder.raw_decode(s, idx=start)
-        docs.append(doc)
-        lsep = len(s[pos:]) - len(s[pos:].lstrip())
-
-        if lsep == 0:
-            raise json.JSONDecodeError("Extra data", s, pos)
-
-        start = pos + lsep
-
-    return docs
-
-
-def multi_json_load(fp, **kwargs):
-    """Deserialize ``fp`` (a ``.read()``-supporting file-like object containing
-       containing whitespace-separated JSON documents) to a list of Python
-       objects.
-    """
-
-    return multi_json_loads(fp.read(), **kwargs)
-
-
 #-----------------------------------------------------------------------------
 # END functions
 #-----------------------------------------------------------------------------
@@ -943,7 +911,9 @@ rule ALL:
 
 rule validate_dentist_config:
     input: dentist_config_file
-    run: full_validate_dentist_config(str(input))
+    container: dentist_container
+    conda: dentist_env
+    script: "scripts/validate_dentist_config.py"
 
 
 _fast2dam_checkpoint[reference] = "reference2dam"
@@ -1353,15 +1323,9 @@ rule make_merge_config:
         insertions_batches = lambda _: insertions_batches()
     output:
         temp(dentist_merge_config_file)
-    run:
-        merge_config = dict()
-        merge_config["merge-insertions"] = dict()
-        merge_config["merge-insertions"]["partitioned-insertions"] = insertions_batches()
-
-        with open(output[0], 'w') as merge_config_file:
-            json.dump(merge_config, merge_config_file)
-
-        dentist_validate_file(output[0])
+    container: dentist_container
+    conda: dentist_env
+    script: "scripts/make_merge_config.py"
 
 
 rule merge_insertions:
@@ -1512,16 +1476,9 @@ rule weak_coverage_mask:
 rule skip_gaps:
     input: validation_report
     output: skip_gaps
-    run:
-        validations = None
-        with open(validation_report, 'r') as validation_report_file:
-            validations = multi_json_load(validation_report_file)
-
-        with open(output[0], 'w') as skip_gaps_file:
-            for validation in validations:
-                if not validation.get("isValid", False):
-                    gap_spec = "-".join((str(cid) for cid in validation["contigIds"]))
-                    print(gap_spec, file=skip_gaps_file)
+    container: dentist_container
+    conda: dentist_env
+    script: "scripts/skip_gaps.py"
 
 if workflow_flags["no_purge_output"]:
     rule unpurged_output:
