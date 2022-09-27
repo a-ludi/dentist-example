@@ -1,3 +1,8 @@
+***Deprecated:** The example is now part of the [main repository](https://github.com/a-ludi/dentist).*
+
+---
+
+
 DENTIST\: Mini Example
 ======================
 
